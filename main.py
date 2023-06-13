@@ -21,16 +21,25 @@ def clear_text_entries():
     weight_txt.delete(0, END)
 
 
+def is_text_entries_empty():
+    return len(current_node_txt.get()) == 0 or len(next_node_txt.get()) == 0 or len(weight_txt.get()) == 0
+
+
 def add_node():
     try:
         current_node = current_node_txt.get()
         next_node = next_node_txt.get()
         weight = int(weight_txt.get())
 
+        if is_text_entries_empty():
+            messagebox.showerror("No se puede agregar el nodo", "Rellena todos los campos")
+            return
+        if weight <= 0:
+            messagebox.showerror("Peso inválido", "El peso no puede ser menor o igual a cero")
+            return
         if not exists_node(current_node, next_node):
             treeview.insert("", "end", values=(current_node, next_node, weight))
-
-        clear_text_entries()
+            clear_text_entries()
 
     except ValueError as error:
         messagebox.showerror("Error", f"Ha ocurrido un error: {str(error)}")
@@ -41,38 +50,45 @@ def delete_node():
     if selected_item:
         treeview.delete(selected_item)
 
+
 def show_network():
+    global network
     network = get_network()
+    if len(network) == 0:
+        messagebox.showwarning("No se puede procesar la red", "La tabla no contiene datos a procesar")
+        return
+
     # Network window
     window = Tk()
     window.title("Visualización de la red")
     window.resizable(False, False)
 
-    if len(network) == 0:
-        messagebox.showwarning("No se puede procesar la red", "La tabla no contiene datos a procesar")
-        return
-    g = nx.Graph()
+    container = Frame(window, padx=20, pady=20)
+    container.pack(fill="both", expand=True)
+
+    # Creación del grafo
+    global network_graph
+    network_graph = nx.Graph()
     for node in network:
-        g.add_edge(node[0], node[1], weight=node[2])
+        network_graph.add_edge(node[0], node[1], weight=node[2])
 
     # Figura de matplotlib
     figure = plt.figure(figsize=(5, 5))
     ax = figure.add_subplot(111)
 
-    pos = nx.spring_layout(g, seed=7)
-    nx.draw_networkx(g, pos, node_size=700, with_labels=True, ax=ax)
-    edges_labels = nx.get_edge_attributes(g, "weight")
-    nx.draw_networkx_edge_labels(g, pos, edges_labels, ax=ax)
+    pos = nx.spring_layout(network_graph, seed=7)
+    nx.draw_networkx(network_graph, pos, node_size=700, with_labels=True, ax=ax)
+    edges_labels = nx.get_edge_attributes(network_graph, "weight")
+    nx.draw_networkx_edge_labels(network_graph, pos, edges_labels, ax=ax)
 
     # Creación del widget
-    canvas = FigureCanvasTkAgg(figure, master=window)
+    canvas = FigureCanvasTkAgg(figure, master=container)
     canvas.draw()
     canvas.get_tk_widget().pack()
 
     # Botones
-    close_window_btn = Button(window, text="Cerrar", command=window.destroy)
-
-    close_window_btn.pack()
+    close_window_btn = Button(container, text="Cerrar", command=window.destroy)
+    close_window_btn.pack(side="right", fill="x")
 
     window.mainloop()
 
@@ -89,9 +105,16 @@ def app():
     window.title("Método de la ruta más corta")
     window.resizable(False, False)
 
+    container = Frame(window, padx=20, pady=20)
+    container.pack(fill="both", expand=True)
+
     # Creación del Treeview (que funcionará como tabla)
     global treeview
-    treeview = ttk.Treeview(window, show="headings", selectmode="browse")
+    treeview = ttk.Treeview(
+        container,
+        show="headings",
+        selectmode="browse"
+    )
 
     # Columnas de la tabla
     treeview["columns"] = ("nodo-actual", "nodo-siguiente", "peso")
@@ -101,37 +124,51 @@ def app():
     # Mostrando la tabla
     treeview.pack(expand=True, fill=BOTH)
 
-    # Cajas de texto
+    # Cajas de texto y labels
     global current_node_txt
     global next_node_txt
     global weight_txt
 
-    label_current_node = Label(window, text="Nodo actual: ")
-    current_node_txt = Entry(window)
+    label_current_node = Label(container, text="Nodo actual: ")
+    current_node_txt = Entry(container)
 
-    label_next_node = Label(window, text="Nodo siguiente: ")
-    next_node_txt = Entry(window)
+    label_next_node = Label(container, text="Nodo siguiente: ")
+    next_node_txt = Entry(container)
 
-    label_weight = Label(window, text="Peso: ")
-    weight_txt = Entry(window)
+    label_weight = Label(container, text="Peso: ")
+    weight_txt = Entry(container)
 
-    label_current_node.pack()
-    current_node_txt.pack()
+    label_current_node.pack(side="left")
+    current_node_txt.pack(side="left")
 
-    label_next_node.pack()
-    next_node_txt.pack()
+    label_next_node.pack(side="left")
+    next_node_txt.pack(side="left")
 
-    label_weight.pack()
-    weight_txt.pack()
+    label_weight.pack(side="left")
+    weight_txt.pack(side="left")
 
     # Botones
-    add_node_btn = Button(window, text="Agregar nodo", command=add_node)
-    delete_node_btn = Button(window, text="Eliminar fila seleccionada", command=delete_node)
-    get_network_btn = Button(window, text="Ver red", command=show_network)
+    add_node_btn = Button(
+        container,
+        text="Agregar nodo",
+        command=add_node
+    )
 
-    add_node_btn.pack()
-    delete_node_btn.pack()
-    get_network_btn.pack()
+    delete_node_btn = Button(
+        container,
+        text="Eliminar fila seleccionada",
+        command=delete_node
+    )
+
+    get_network_btn = Button(
+        container,
+        text="Ver red",
+        command=show_network
+    )
+
+    add_node_btn.pack(side="left", pady=5, padx=10, fill="x")
+    delete_node_btn.pack(side="left", pady=5, padx=10, fill="x")
+    get_network_btn.pack(side="left", pady=5, padx=10, fill="x")
 
     window.mainloop()
 
