@@ -48,7 +48,16 @@ def add_node():
 def delete_node():
     selected_item = treeview.selection()
     if selected_item:
-        treeview.delete(selected_item)
+        treeview.delete(selected_item[0])
+
+
+def solve_network(start, end, nt_graph):
+    try:
+        shortest_path = nx.dijkstra_path(nt_graph, start, end)
+        n_shortest_path = nx.dijkstra_path_length(nt_graph, start, end)
+        messagebox.showinfo("Resolución", f"La ruta más corta es: {shortest_path}\nLa solución óptima es: {n_shortest_path}")
+    except Exception as error:
+        messagebox.showerror("Error en el cálculo", str(error))
 
 
 def show_network():
@@ -70,7 +79,7 @@ def show_network():
     global network_graph
     network_graph = nx.Graph()
     for node in network:
-        network_graph.add_edge(node[0], node[1], weight=node[2])
+        network_graph.add_edge(str(node[0]), str(node[1]), weight=node[2])
 
     # Figura de matplotlib
     figure = plt.figure(figsize=(5, 5))
@@ -87,8 +96,33 @@ def show_network():
     canvas.get_tk_widget().pack()
 
     # Botones
-    close_window_btn = Button(container, text="Cerrar", command=window.destroy)
+    close_window_btn = Button(container, text="Cerrar", command=window.destroy, padx=10)
     close_window_btn.pack(side="right", fill="x")
+    solve_network_btn = Button(
+        container,
+        text="Resolver red",
+        command=lambda: solve_network(
+            start_node_txt.get(),
+            final_node_txt.get(),
+            network_graph
+        ), padx=10
+    )
+    solve_network_btn.pack(side="right", fill="x")
+
+    # Cajas de texto y labels
+    global final_node_txt
+    global start_node_txt
+    final_node_txt = Entry(container)
+    start_node_txt = Entry(container)
+
+    start_node_label = Label(container, text="Nodo origen")
+    final_node_label = Label(container, text="Nodo destino")
+
+    start_node_label.pack(side="left")
+    start_node_txt.pack(side="left")
+
+    final_node_label.pack(side="left")
+    final_node_txt.pack(side="left")
 
     window.mainloop()
 
